@@ -8,19 +8,17 @@
 
 
 <script scoped>
-
-export default {
-    name: 'App',
-    data(){
-        return {
-            msg: 'Vue Webpack Logo'
-        } 
-    },
-    created(){},
-    mounted(){},
-    components: {}
-}
-
+    export default {
+        name: 'App',
+        data(){
+            return {
+                msg: 'Vue Webpack Logo 52099988888'
+            } 
+        },
+        created(){},
+        mounted(){},
+        components: {}
+    }
 </script>
 
 <style scoped lang="less">
