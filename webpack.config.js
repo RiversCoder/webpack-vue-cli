@@ -1,15 +1,18 @@
 const path = require('path')
+const webpack = require('webpack')
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const htmlWebpackPlugin = require('html-webpack-plugin');
 const miniCssExtractPlugin = require('mini-css-extract-plugin');
-const webpack = require('webpack')
+const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+
 
 module.exports = {
     mode: 'development',
     entry: './src/main.js',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'js/[name].bundle.js'
+        filename: 'js/[name].bundle.js',
+        publicPath: './'
     },
     devtool: 'inline-source-map',
     devServer:{
@@ -25,12 +28,7 @@ module.exports = {
             exclude:/node_modules/
         },{
             test:/\.css$/,
-            use:[ miniCssExtractPlugin.loader, {
-                loader: 'css-loader',
-                options: {
-                    url: false
-                }
-            }]
+            use:[ miniCssExtractPlugin.loader, 'css-loader']
         },{
             test:/\.(png|jpe?g|gif|svg)(\?.*)?$/,
             use: [{
@@ -52,7 +50,7 @@ module.exports = {
         },
         {
             test:/\.less$/,
-            use:[ 'vue-style-loader', 'css-loader', 'less-loader' ]
+            use:[ miniCssExtractPlugin.loader, 'css-loader', 'less-loader' ]
         },
         {
             test:/\.vue$/,
@@ -60,7 +58,7 @@ module.exports = {
             options:{
                 loaders: {
                     'css': '',
-                    'less': [ 'vue-style-loader', 'css-loader', 'less-loader']
+                    'less': [ miniCssExtractPlugin.loader, 'css-loader', 'less-loader']
                 }
             }
         }]
@@ -73,7 +71,9 @@ module.exports = {
         }
     },
     plugins:[
+        // 加载 vue-loader 插件
         new VueLoaderPlugin(),
+        // 生成 index.html
         new htmlWebpackPlugin({
             hash: true,
             open: true,
@@ -81,11 +81,28 @@ module.exports = {
             title:'webpack-vue',
             template: './index.html'
         }),
+        // 热模块替换 HMR
         new webpack.HotModuleReplacementPlugin(),
+        // 从文件中提取 css
         new miniCssExtractPlugin({
-            filename: '[name].css'
-        })
+            filename: '[name].css',
+            chunkFilename: '[name].chunk.css',
+        }),
+        // 压缩 css
+        new OptimizeCSSAssetsPlugin({}) 
     ],
+    optimization: {
+        splitChunks: {
+            cacheGroups: {
+                styles: {
+                    name: 'styles',
+                    test: /\.css$/,
+                    chunks: 'all',
+                    enforce: true,
+                }
+            }
+        }
+    },
     externals:{
         'jquery': 'window.jQuery'
     }

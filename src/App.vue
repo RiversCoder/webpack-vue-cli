@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+      <Header></Header>
       <img :src="require('@/assets/logo.jpg')" />
       <span>{{msg}}</span>
       <p class="test">Test Text</p>
@@ -8,6 +9,9 @@
 
 
 <script scoped>
+    import Header from './components/header.vue'
+    import $ from 'jquery'
+
     export default {
         name: 'App',
         data(){
@@ -15,9 +19,13 @@
                 msg: 'Vue Webpack Logo 52099988888'
             } 
         },
-        created(){},
+        created(){
+            console.log($)
+        },
         mounted(){},
-        components: {}
+        components: {
+            Header
+        }
     }
 </script>
 
