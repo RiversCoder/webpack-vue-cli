@@ -16,7 +16,7 @@
         name: 'App',
         data(){
             return {
-                msg: 'Vue Webpack Logo 52099988888'
+                msg: 'Vue Webpack Logo Text 123'
             } 
         },
         created(){

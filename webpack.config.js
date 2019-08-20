@@ -4,21 +4,23 @@ const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const htmlWebpackPlugin = require('html-webpack-plugin');
 const miniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const Mode = process.env.NODE_ENV ? process.env.NODE_ENV : 'development';
 
 module.exports = {
     mode: 'development',
     entry: './src/main.js',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'js/[name].bundle.js',
-        publicPath: './'
+        filename: 'js/[name].js',
+        chunkFilename: 'js/[name].bundle.js',
+        publicPath: '/'
     },
-    devtool: 'inline-source-map',
+    devtool: '#eval-source-map',
     devServer:{
         contentBase: path.resolve(__dirname,'dist'),
         port: 3002,
-        open: true,
+        open: false,
         hot: true
     },
     module:{
@@ -28,14 +30,14 @@ module.exports = {
             exclude:/node_modules/
         },{
             test:/\.css$/,
-            use:[ miniCssExtractPlugin.loader, 'css-loader']
+            use:[ Mode == 'development'? 'style-loader' : miniCssExtractPlugin.loader, 'css-loader']
         },{
             test:/\.(png|jpe?g|gif|svg)(\?.*)?$/,
             use: [{
                 loader: 'file-loader',
                 options:{
                     limit:10000,
-                    name:'dist/img/[name].[ext]?[hash]'
+                    name:'img/[name].[ext]?[hash]'
                 }
             }]
         },{
@@ -44,13 +46,13 @@ module.exports = {
                 loader: "url-loader",
                 options:{
                     limit:10000,
-                    name:'dist/fonts/[name].[ext]?[hash]'
+                    name:'fonts/[name].[ext]?[hash]'
                 }
             }]
         },
         {
             test:/\.less$/,
-            use:[ miniCssExtractPlugin.loader, 'css-loader', 'less-loader' ]
+            use:[ Mode == 'development'? 'style-loader' : miniCssExtractPlugin.loader, 'css-loader', 'less-loader' ]
         },
         {
             test:/\.vue$/,
@@ -58,7 +60,7 @@ module.exports = {
             options:{
                 loaders: {
                     'css': '',
-                    'less': [ miniCssExtractPlugin.loader, 'css-loader', 'less-loader']
+                    'less': [ Mode == 'development'? 'vue-style-loader' : miniCssExtractPlugin.loader, 'css-loader', 'less-loader']
                 }
             }
         }]
@@ -71,40 +73,29 @@ module.exports = {
         }
     },
     plugins:[
+        // 定义全局变量 默认 development
+        new webpack.DefinePlugin({
+            'process.env': {
+                NODE_ENV: '"development"'
+            }
+        }),
         // 加载 vue-loader 插件
         new VueLoaderPlugin(),
         // 生成 index.html
         new htmlWebpackPlugin({
             hash: true,
-            open: true,
             filename: 'index.html',
             title:'webpack-vue',
             template: './index.html'
         }),
         // 热模块替换 HMR
         new webpack.HotModuleReplacementPlugin(),
-        // 从文件中提取 css
-        new miniCssExtractPlugin({
-            filename: '[name].css',
-            chunkFilename: '[name].chunk.css',
-        }),
-        // 压缩 css
-        new OptimizeCSSAssetsPlugin({}) 
     ],
-    optimization: {
-        splitChunks: {
-            cacheGroups: {
-                styles: {
-                    name: 'styles',
-                    test: /\.css$/,
-                    chunks: 'all',
-                    enforce: true,
-                }
-            }
-        }
-    },
     externals:{
         'jquery': 'window.jQuery'
+    },
+    performance:{
+        hints:false  
     }
 }
 
@@ -112,13 +103,35 @@ module.exports = {
 * 生成生产代码的时候才触发 新增全局 process.env.NODE_ENV = "production"
 */
 if (process.env.NODE_ENV === 'production') {
-    // http://vue-loader.vuejs.org/en/workflow/production.html
+    module.exports.mode = 'production'
+    module.exports.devtool = '#source-map'
+    module.exports.output.publicPath = './'
+    module.exports.optimization = {
+        minimizer: [ new OptimizeCSSAssetsPlugin({}) ], // 压缩 css
+        splitChunks: {
+            cacheGroups: {
+                vendor: {
+                    name: 'vendor',
+                    test: /\.(css|js)$/,
+                    chunks: 'all',
+                    enforce: true,
+                }
+            }
+        }
+    };
     module.exports.plugins = (module.exports.plugins || []).concat([
         new webpack.DefinePlugin({
             'process.env': {
                 NODE_ENV: '"production"'
             }
         }),
+        // 从文件中提取 css 包括公共文件
+        new miniCssExtractPlugin({
+            filename: 'css/[name].css',
+            chunkFilename: 'css/[name].chunk.css',
+        }),
+        // clear dist dir
+        new CleanWebpackPlugin()
     ])
 }
 
