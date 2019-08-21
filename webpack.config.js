@@ -9,7 +9,10 @@ const Mode = process.env.NODE_ENV ? process.env.NODE_ENV : 'development';
 
 module.exports = {
     mode: 'development',
-    entry: './src/main.js',
+    entry: {
+        main: './src/main.js',
+        detail: './src/detail.js'
+    },
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'js/[name].js',
@@ -30,7 +33,11 @@ module.exports = {
             exclude:/node_modules/
         },{
             test:/\.css$/,
-            use:[ Mode == 'development'? 'style-loader' : miniCssExtractPlugin.loader, 'css-loader']
+            use:[ 
+                Mode == 'development'? 'style-loader' : miniCssExtractPlugin.loader, 
+                'css-loader',
+                'postcss-loader'
+            ]
         },{
             test:/\.(png|jpe?g|gif|svg)(\?.*)?$/,
             use: [{
@@ -52,7 +59,7 @@ module.exports = {
         },
         {
             test:/\.less$/,
-            use:[ Mode == 'development'? 'style-loader' : miniCssExtractPlugin.loader, 'css-loader', 'less-loader' ]
+            use:[ Mode == 'development'? 'style-loader' : miniCssExtractPlugin.loader, 'css-loader', 'less-loader', 'postcss-loader']
         },
         {
             test:/\.vue$/,
@@ -60,7 +67,7 @@ module.exports = {
             options:{
                 loaders: {
                     'css': '',
-                    'less': [ Mode == 'development'? 'vue-style-loader' : miniCssExtractPlugin.loader, 'css-loader', 'less-loader']
+                    'less': [ Mode == 'development'? 'vue-style-loader' : miniCssExtractPlugin.loader, 'css-loader', 'less-loader', 'postcss-loader']
                 }
             }
         }]
@@ -86,7 +93,16 @@ module.exports = {
             hash: true,
             filename: 'index.html',
             title:'webpack-vue',
-            template: './index.html'
+            template: './index.html',
+            chunks: ['main','runtime','venders','vendors-detail-main']
+        }),
+        // 生成 detail.html
+        new htmlWebpackPlugin({
+            hash: true,
+            filename:'detail.html',
+            title:'vue detail',
+            template:'./index.html',
+            chunks: ['detail','runtime','venders','vendors-detail-main']
         }),
         // 热模块替换 HMR
         new webpack.HotModuleReplacementPlugin(),
@@ -108,13 +124,18 @@ if (process.env.NODE_ENV === 'production') {
     module.exports.output.publicPath = './'
     module.exports.optimization = {
         minimizer: [ new OptimizeCSSAssetsPlugin({}) ], // 压缩 css
+        runtimeChunk:{
+            name: 'runtime'
+        },
         splitChunks: {
+            chunks: "all",
+            automaticNameDelimiter: '-',
             cacheGroups: {
-                vendor: {
-                    name: 'vendor',
-                    test: /\.(css|js)$/,
-                    chunks: 'all',
+                venders: {
+                    name: 'venders',
+                    test: /\.css$/,
                     enforce: true,
+                    priority: -10 // 执行顺序等级 越大越先执行
                 }
             }
         }
